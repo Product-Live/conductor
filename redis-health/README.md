@@ -47,7 +47,7 @@ Run Build along with the tests
 
 In the `.properties` file of conductor `server` you must add the following configurations.
 
-* Add the AzureBlob module. If you have several modules, separate them with a comma.
+* Add the RedisHealthModule module. If you have several modules, separate them with a comma.
 ```
 conductor.additional.modules=com.netflix.conductor.health.RedisHealthModule
 ```

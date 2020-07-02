@@ -19,25 +19,27 @@ public class ElasticSearchHealthIndicator implements HealthIndicator {
     @Inject
     public ElasticSearchHealthIndicator(Client esClient) {
         this.esClient = esClient;
-        LOGGER.debug("Health Indicator is Ready !");
-    }
+        LOGGER.info("Health Indicator is Ready");
+   }
 
     @Override
     public void check(HealthIndicatorCallback healthIndicatorCallback) {
         LOGGER.debug("Checking Health");
         try {
-            ClusterHealthResponse healths = this.esClient.admin().cluster().prepareHealth().get();
+            ClusterHealthResponse health = this.esClient.admin().cluster().prepareHealth().get();
 
-            if (healths.isTimedOut()) {
-                healthIndicatorCallback.inform(Health.unhealthy().withDetail("timed_out", "").build());
-            }
-
-            // TODO Anything needed that define as Healthy for your need
-            if (healths.getStatus().equals(ClusterHealthStatus.GREEN)
-                || healths.getStatus().equals(ClusterHealthStatus.YELLOW)) {
+            if (health.isTimedOut()) {
+                healthIndicatorCallback.inform(
+                    Health
+                        .unhealthy()
+                        .withDetail("clusterHealth", health)
+                        .build()
+                );
+            } else if (health.getStatus().equals(ClusterHealthStatus.GREEN)
+                || health.getStatus().equals(ClusterHealthStatus.YELLOW)) {
                 healthIndicatorCallback.inform(Health.healthy().build());
             } else {
-                healthIndicatorCallback.inform(Health.unhealthy().withDetail("cluster_health_status", healths.getStatus().name()).build());
+                healthIndicatorCallback.inform(Health.unhealthy().withDetail("clusterHealth", health).build());
             }
         } catch (Exception e) {
             healthIndicatorCallback.inform(Health.unhealthy().withException(e).build());

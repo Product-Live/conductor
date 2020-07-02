@@ -3,6 +3,7 @@ package com.netflix.conductor.health;
 import com.netflix.runtime.health.api.Health;
 import com.netflix.runtime.health.api.HealthIndicator;
 import com.netflix.runtime.health.api.HealthIndicatorCallback;
+import com.netflix.runtime.health.guice.HealthAggregatorConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.commands.JedisCommands;
@@ -15,16 +16,17 @@ public class RedisHealthIndicator implements HealthIndicator {
     private final JedisCommands jedisClient;
 
     @Inject
-    public RedisHealthIndicator(JedisCommands jedisClient) {
+    public RedisHealthIndicator(JedisCommands jedisClient, HealthAggregatorConfiguration config) {
         this.jedisClient = jedisClient;
-        LOGGER.debug("Health Indicator is Ready !");
+        LOGGER.info("Health Indicator is Ready");
+        LOGGER.info(config.toString());
     }
 
     @Override
     public void check(HealthIndicatorCallback healthIndicatorCallback) {
         LOGGER.debug("Checking Health");
         try {
-            this.jedisClient.exists("up");
+            this.jedisClient.exists("up"); // Key can be whatever. Only used to test connectivity.
             healthIndicatorCallback.inform(Health.healthy().build());
         } catch (Exception e) {
             healthIndicatorCallback.inform(Health.unhealthy().withException(e).build());

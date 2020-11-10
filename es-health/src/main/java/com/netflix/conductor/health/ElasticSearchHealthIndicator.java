@@ -36,7 +36,7 @@ public class ElasticSearchHealthIndicator implements HealthIndicator {
                         .build()
                 );
             } else if (health.getStatus().equals(ClusterHealthStatus.GREEN)
-                || health.getStatus().equals(ClusterHealthStatus.YELLOW)) {
+                || health.getStatus().equals(ClusterHealthStatus.YELLOW)) { // Allow YELLOW status (single node)
                 healthIndicatorCallback.inform(Health.healthy().build());
             } else {
                 healthIndicatorCallback.inform(Health.unhealthy().withDetail("clusterHealth", health).build());

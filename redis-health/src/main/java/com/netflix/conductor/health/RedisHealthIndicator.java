@@ -3,7 +3,6 @@ package com.netflix.conductor.health;
 import com.netflix.runtime.health.api.Health;
 import com.netflix.runtime.health.api.HealthIndicator;
 import com.netflix.runtime.health.api.HealthIndicatorCallback;
-import com.netflix.runtime.health.guice.HealthAggregatorConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.commands.JedisCommands;
@@ -16,10 +15,9 @@ public class RedisHealthIndicator implements HealthIndicator {
     private final JedisCommands jedisClient;
 
     @Inject
-    public RedisHealthIndicator(JedisCommands jedisClient, HealthAggregatorConfiguration config) {
+    public RedisHealthIndicator(JedisCommands jedisClient) {
         this.jedisClient = jedisClient;
         LOGGER.info("Health Indicator is Ready");
-        LOGGER.info(config.toString());
     }
 
     @Override

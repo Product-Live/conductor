@@ -54,6 +54,13 @@ In the `.properties` file of conductor `server` you must add the following confi
 conductor.additional.modules=com.netflix.conductor.health.ElasticSearchHealthModule
 ```
 
+* Health Indicator can be configured through HealthAggregatorConfiguration. The following attributes can be added to the properties file
+```
+health.aggregator.cacheHealthIndicators=true
+health.aggregator.cacheIntervalInMillis=5000
+health.aggregator.aggregatorWaitIntervalInMillis=1000
+```
+
 ### Usage
 
 Request: HTTP GET /api/health

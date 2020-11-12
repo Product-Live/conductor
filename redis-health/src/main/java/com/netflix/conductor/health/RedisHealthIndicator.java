@@ -24,7 +24,7 @@ public class RedisHealthIndicator implements HealthIndicator {
     public void check(HealthIndicatorCallback healthIndicatorCallback) {
         LOGGER.debug("Checking Health");
         try {
-            this.jedisClient.exists("up"); // Key can be whatever. Only used to test connectivity.
+            this.jedisClient.exists(""); // Key can be whatever. Only used to test connectivity.
             healthIndicatorCallback.inform(Health.healthy().build());
         } catch (Exception e) {
             healthIndicatorCallback.inform(Health.unhealthy().withException(e).build());

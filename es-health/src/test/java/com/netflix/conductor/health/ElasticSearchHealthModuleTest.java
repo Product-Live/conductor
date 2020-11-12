@@ -1,10 +1,7 @@
 package com.netflix.conductor.health;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provider;
-import com.google.inject.Singleton;
 import com.netflix.archaius.guice.ArchaiusModule;
-//import com.netflix.conductor.dao.elasticsearch.ClientMock;
 import com.netflix.governator.InjectorBuilder;
 import com.netflix.governator.LifecycleInjector;
 import com.netflix.runtime.health.api.HealthCheckAggregator;
@@ -12,9 +9,6 @@ import com.netflix.runtime.health.api.HealthCheckStatus;
 import com.netflix.runtime.health.guice.HealthModule;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.cluster.ClusterName;
-import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.junit.Assert;
 import org.junit.Test;
@@ -24,6 +18,8 @@ import java.util.concurrent.ExecutionException;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+//import com.netflix.conductor.dao.elasticsearch.ClientMock;
 
 public class ElasticSearchHealthModuleTest {
 

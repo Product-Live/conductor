@@ -81,6 +81,9 @@ public class ConductorProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration taskExecutionPostponeDuration = Duration.ofSeconds(60);
 
+    /** The time (in milliseconds) for which the task execution poll will timeout. */
+    private Duration taskExecutionPostponeTimeout = Duration.ofMillis(100);
+
     /** Used to enable/disable the indexing of tasks. */
     private boolean taskIndexingEnabled = true;
 
@@ -105,6 +108,9 @@ public class ConductorProperties {
      * workers.
      */
     private Duration systemTaskWorkerPollInterval = Duration.ofMillis(50);
+
+    /** The timeout (in milliseconds) for the polling of system task workers. */
+    private Duration systemTaskWorkerPollTimeout = Duration.ofMillis(200);
 
     /** The namespace for the system task workers to provide instance level isolation. */
     private String systemTaskWorkerExecutionNamespace = "";
@@ -328,6 +334,14 @@ public class ConductorProperties {
         this.taskExecutionPostponeDuration = taskExecutionPostponeDuration;
     }
 
+    public Duration getTaskExecutionPostponeTimeout() {
+        return taskExecutionPostponeTimeout;
+    }
+
+    public void setTaskExecutionPostponeTimeout(Duration taskExecutionPostponeTimeout) {
+        this.taskExecutionPostponeTimeout = taskExecutionPostponeTimeout;
+    }
+
     public boolean isTaskExecLogIndexingEnabled() {
         return taskExecLogIndexingEnabled;
     }
@@ -374,6 +388,14 @@ public class ConductorProperties {
 
     public void setSystemTaskWorkerPollInterval(Duration systemTaskWorkerPollInterval) {
         this.systemTaskWorkerPollInterval = systemTaskWorkerPollInterval;
+    }
+
+    public Duration getSystemTaskWorkerPollTimeout() {
+        return systemTaskWorkerPollTimeout;
+    }
+
+    public void setSystemTaskWorkerPollTimeout(Duration systemTaskWorkerPollTimeout) {
+        this.systemTaskWorkerPollTimeout = systemTaskWorkerPollTimeout;
     }
 
     public String getSystemTaskWorkerExecutionNamespace() {

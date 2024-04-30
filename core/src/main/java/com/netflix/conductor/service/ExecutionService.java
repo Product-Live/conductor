@@ -56,6 +56,7 @@ public class ExecutionService {
     private final TaskStatusListener taskStatusListener;
 
     private final long queueTaskMessagePostponeSecs;
+    private final int pollTimeout;
 
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
     private static final int POLL_COUNT_ONE = 1;
@@ -76,6 +77,7 @@ public class ExecutionService {
 
         this.queueTaskMessagePostponeSecs =
                 properties.getTaskExecutionPostponeDuration().getSeconds();
+        this.pollTimeout = (int) properties.getTaskExecutionPostponeTimeout().toMillis();
         this.systemTaskRegistry = systemTaskRegistry;
         this.taskStatusListener = taskStatusListener;
     }
@@ -85,8 +87,7 @@ public class ExecutionService {
     }
 
     public Task poll(String taskType, String workerId, String domain) {
-
-        List<Task> tasks = poll(taskType, workerId, domain, 1, 100);
+        List<Task> tasks = poll(taskType, workerId, domain, 1, pollTimeout);
         if (tasks.isEmpty()) {
             return null;
         }

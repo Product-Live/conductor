@@ -46,6 +46,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemTaskWorker.class);
 
     private final long pollInterval;
+    private final int pollTimeout;
     private final QueueDAO queueDAO;
 
     ExecutionConfig defaultExecutionConfig;
@@ -66,6 +67,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         this.asyncSystemTaskExecutor = asyncSystemTaskExecutor;
         this.queueDAO = queueDAO;
         this.pollInterval = properties.getSystemTaskWorkerPollInterval().toMillis();
+        this.pollTimeout = (int) properties.getSystemTaskWorkerPollTimeout().toMillis();
         this.executionService = executionService;
 
         LOGGER.info("SystemTaskWorker initialized with {} threads", threadCount);
@@ -108,7 +110,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
 
             LOGGER.debug("Polling queue: {} with {} slots acquired", queueName, messagesToAcquire);
 
-            List<String> polledTaskIds = queueDAO.pop(queueName, messagesToAcquire, 200);
+            List<String> polledTaskIds = queueDAO.pop(queueName, messagesToAcquire, pollTimeout);
 
             Monitors.recordTaskPoll(queueName);
             LOGGER.debug("Polling queue:{}, got {} tasks", queueName, polledTaskIds.size());

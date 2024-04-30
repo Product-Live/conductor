@@ -14,6 +14,7 @@ package com.netflix.conductor.core.reconciliation;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,8 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.execution.tasks.ExecutionConfig;
+import com.netflix.conductor.core.utils.SemaphoreUtil;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -43,6 +46,7 @@ public class WorkflowReconciler extends LifecycleAwareComponent {
     private final QueueDAO queueDAO;
     private final int sweeperThreadCount;
     private final int sweeperWorkflowPollTimeout;
+    ExecutionConfig executionConfig;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowReconciler.class);
 
@@ -51,6 +55,8 @@ public class WorkflowReconciler extends LifecycleAwareComponent {
         this.workflowSweeper = workflowSweeper;
         this.queueDAO = queueDAO;
         this.sweeperThreadCount = properties.getSweeperThreadCount();
+        this.executionConfig =
+                new ExecutionConfig(sweeperThreadCount, "system-workflow-reconciler-%d");
         this.sweeperWorkflowPollTimeout =
                 (int) properties.getSweeperWorkflowPollTimeout().toMillis();
         LOGGER.info(
@@ -65,23 +71,40 @@ public class WorkflowReconciler extends LifecycleAwareComponent {
         try {
             if (!isRunning()) {
                 LOGGER.debug("Component stopped, skip workflow sweep");
-            } else {
-                List<String> workflowIds =
-                        queueDAO.pop(DECIDER_QUEUE, sweeperThreadCount, sweeperWorkflowPollTimeout);
-                if (workflowIds != null) {
-                    // wait for all workflow ids to be "swept"
-                    CompletableFuture.allOf(
-                                    workflowIds.stream()
-                                            .map(workflowSweeper::sweepAsync)
-                                            .toArray(CompletableFuture[]::new))
-                            .get();
-                    LOGGER.debug(
-                            "Sweeper processed {} from the decider queue",
-                            String.join(",", workflowIds));
-                }
-                // NOTE: Disabling the sweeper implicitly disables this metric.
-                recordQueueDepth();
+                return;
             }
+
+            SemaphoreUtil semaphoreUtil = executionConfig.getSemaphoreUtil();
+            int messagesToAcquire = semaphoreUtil.availableSlots();
+            if (messagesToAcquire <= 0 || !semaphoreUtil.acquireSlots(messagesToAcquire)) {
+                LOGGER.debug("Sweeper no availableSlot");
+                return;
+            }
+            ExecutorService executorService = executionConfig.getExecutorService();
+            LOGGER.debug("Sweeper fetch {} message from queue", messagesToAcquire);
+
+            List<String> workflowIds =
+                    queueDAO.pop(DECIDER_QUEUE, messagesToAcquire, sweeperWorkflowPollTimeout);
+            if (workflowIds.size() > 0) {
+                if (workflowIds.size() < messagesToAcquire) {
+                    semaphoreUtil.completeProcessing(messagesToAcquire - workflowIds.size());
+                }
+                LOGGER.debug(
+                        "Sweeper processed {} from the decider queue",
+                        String.join(",", workflowIds));
+
+                for (String workflowId : workflowIds) {
+                    CompletableFuture<Void> workflowCompletableFuture =
+                            CompletableFuture.runAsync(
+                                    () -> workflowSweeper.sweepAsync(workflowId), executorService);
+                    workflowCompletableFuture.whenComplete(
+                            (r, e) -> semaphoreUtil.completeProcessing(1));
+                }
+            } else {
+                semaphoreUtil.completeProcessing(messagesToAcquire);
+            }
+            // NOTE: Disabling the sweeper implicitly disables this metric.
+            recordQueueDepth();
         } catch (Exception e) {
             Monitors.error(WorkflowReconciler.class.getSimpleName(), "poll");
             LOGGER.error("Error when polling for workflows", e);

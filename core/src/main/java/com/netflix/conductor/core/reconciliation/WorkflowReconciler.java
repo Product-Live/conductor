@@ -68,14 +68,14 @@ public class WorkflowReconciler extends LifecycleAwareComponent {
             fixedDelayString = "${conductor.sweep-frequency.millis:500}",
             initialDelayString = "${conductor.sweep-frequency.millis:500}")
     public void pollAndSweep() {
-        try {
-            if (!isRunning()) {
-                LOGGER.debug("Component stopped, skip workflow sweep");
-                return;
-            }
+        if (!isRunning()) {
+            LOGGER.debug("Component stopped, skip workflow sweep");
+            return;
+        }
 
-            SemaphoreUtil semaphoreUtil = executionConfig.getSemaphoreUtil();
-            int messagesToAcquire = semaphoreUtil.availableSlots();
+        SemaphoreUtil semaphoreUtil = executionConfig.getSemaphoreUtil();
+        int messagesToAcquire = semaphoreUtil.availableSlots();
+        try {
             if (messagesToAcquire <= 0 || !semaphoreUtil.acquireSlots(messagesToAcquire)) {
                 LOGGER.debug("Sweeper no availableSlot");
                 return;
@@ -106,6 +106,7 @@ public class WorkflowReconciler extends LifecycleAwareComponent {
             // NOTE: Disabling the sweeper implicitly disables this metric.
             recordQueueDepth();
         } catch (Exception e) {
+            semaphoreUtil.completeProcessing(messagesToAcquire);
             Monitors.error(WorkflowReconciler.class.getSimpleName(), "poll");
             LOGGER.error("Error when polling for workflows", e);
             if (e instanceof InterruptedException) {

@@ -19,12 +19,12 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 import com.netflix.conductor.core.utils.SemaphoreUtil;
 
-public class ExecutionConfig {
+class ExecutionConfig {
 
     private final ExecutorService executorService;
     private final SemaphoreUtil semaphoreUtil;
 
-    public ExecutionConfig(int threadCount, String threadNameFormat) {
+    ExecutionConfig(int threadCount, String threadNameFormat) {
 
         this.executorService =
                 Executors.newFixedThreadPool(

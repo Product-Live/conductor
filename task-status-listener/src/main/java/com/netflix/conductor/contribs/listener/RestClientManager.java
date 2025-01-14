@@ -188,14 +188,15 @@ public class RestClientManager {
         String url = prepareUrl(notifType, statusNotifier);
 
         Map<String, String> headers = new HashMap<>();
-        headers.put(config.getHeaderPrefer(), config.getHeaderPreferValue());
+        if (config.getHeaderPrefer() != "" && config.getHeaderPreferValue() != "")
+            headers.put(config.getHeaderPrefer(), config.getHeaderPreferValue());
 
         HttpPost request = createPostRequest(url, data, headers);
         long start = System.currentTimeMillis();
         executePost(request);
         long duration = System.currentTimeMillis() - start;
         if (duration > 100) {
-            logger.info("Round trip response time = " + (duration) + " millis");
+            logger.info("Round trip response time = {} millis", duration);
         }
     }
 
@@ -212,7 +213,7 @@ public class RestClientManager {
             }
         } else if (notifType == RestClientManager.NotificationType.WORKFLOW) {
             if (statusNotifier != null
-                    && StringUtils.isNotBlank(statusNotifier.getEndpointTask())) {
+                    && StringUtils.isNotBlank(statusNotifier.getEndpointWorkflow())) {
                 urlEndPoint = statusNotifier.getEndpointWorkflow();
             } else {
                 urlEndPoint = config.getEndpointWorkflow();

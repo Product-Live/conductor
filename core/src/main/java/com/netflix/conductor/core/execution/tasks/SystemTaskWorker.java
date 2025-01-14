@@ -53,6 +53,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     private final AsyncSystemTaskExecutor asyncSystemTaskExecutor;
     private final ConductorProperties properties;
     private final ExecutionService executionService;
+    private final int queuePopTimeout;
 
     ConcurrentHashMap<String, ExecutionConfig> queueExecutionConfigMap = new ConcurrentHashMap<>();
 
@@ -69,6 +70,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         this.pollInterval = properties.getSystemTaskWorkerPollInterval().toMillis();
         this.pollTimeout = (int) properties.getSystemTaskWorkerPollTimeout().toMillis();
         this.executionService = executionService;
+        this.queuePopTimeout = (int) properties.getSystemTaskQueuePopTimeout().toMillis();
 
         LOGGER.info("SystemTaskWorker initialized with {} threads", threadCount);
     }
@@ -98,8 +100,14 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         SemaphoreUtil semaphoreUtil = executionConfig.getSemaphoreUtil();
         ExecutorService executorService = executionConfig.getExecutorService();
         String taskName = QueueUtils.getTaskType(queueName);
-
-        int messagesToAcquire = semaphoreUtil.availableSlots();
+        final int systemTaskMaxPollCount = properties.getSystemTaskMaxPollCount();
+        int maxSystemTasksToAcquire =
+                (systemTaskMaxPollCount < 1
+                                || systemTaskMaxPollCount
+                                        > properties.getSystemTaskWorkerThreadCount())
+                        ? properties.getSystemTaskWorkerThreadCount()
+                        : systemTaskMaxPollCount;
+        int messagesToAcquire = Math.min(semaphoreUtil.availableSlots(), maxSystemTasksToAcquire);
 
         try {
             if (messagesToAcquire <= 0 || !semaphoreUtil.acquireSlots(messagesToAcquire)) {
@@ -110,7 +118,9 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
 
             LOGGER.debug("Polling queue: {} with {} slots acquired", queueName, messagesToAcquire);
 
-            List<String> polledTaskIds = queueDAO.pop(queueName, messagesToAcquire, pollTimeout);
+            List<String> polledTaskIds =
+                    queueDAO.pop(queueName, messagesToAcquire, queuePopTimeout);
+
 
             Monitors.recordTaskPoll(queueName);
             LOGGER.debug("Polling queue: {}, got {} tasks", queueName, polledTaskIds.size());
